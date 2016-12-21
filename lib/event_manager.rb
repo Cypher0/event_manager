@@ -36,20 +36,26 @@ def clean_phone_number(number)
   end
 end
 
+def sort_datetime_by_regs(hash, name)
+  hash.sort_by { |_, v| v }.reverse.each do |datetime, regs|
+    puts "#{name}: #{datetime}, registered users: #{regs}"
+  end
+end
+
 puts 'EventManager initialized!'
 
 contents = CSV.open 'event_attendees.csv', headers: true, header_converters: :symbol
 template_letter = File.read 'form_letter.erb'
 erb_template = ERB.new template_letter
 
-#contents.each do |row|
-#  id = row[0]
-#  name = row[:first_name]
-#  zipcode = clean_zipcode(row[:zipcode])
-#  legislators = legislators_by_zipcode(zipcode)
-#  form_letter = erb_template.result(binding)
-#  save_thank_you_letters(id, form_letter)
-#end
+contents.each do |row|
+  id = row[0]
+  name = row[:first_name]
+  zipcode = clean_zipcode(row[:zipcode])
+  legislators = legislators_by_zipcode(zipcode)
+  form_letter = erb_template.result(binding)
+  save_thank_you_letters(id, form_letter)
+end
 
 # Display all names and phone numbers.
 def display_phone_numbers
@@ -61,19 +67,19 @@ def display_phone_numbers
   end
 end
 
+# Display users registered by hour and weekday, sorted by highest to lowest.
 def time_targeting
   contents = CSV.open 'event_attendees.csv', headers: true, header_converters: :symbol
   hours = Hash.new(0)
+  wdays = Hash.new(0)
   contents.each do |row|
-    reg_date_string = row[:regdate]
-    reg_date = DateTime.strptime(reg_date_string, '%m/%d/%y %H:%M')
+    reg_date = DateTime.strptime(row[:regdate], '%m/%d/%y %H:%M')
     hours[reg_date.hour] += 1
+    wdays[reg_date.strftime('%A')] += 1
   end
-  hours.sort_by {|k, v| v}.reverse.each do |hour, regs|
-    puts "Hour: #{hour}, registered: #{regs}"
-  end
+  sort_datetime_by_regs(hours, 'Hour')
+  sort_datetime_by_regs(wdays, 'Day of the Week')
 end
-
 
 display_phone_numbers
 time_targeting
